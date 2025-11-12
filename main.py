@@ -1,6 +1,10 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from database import create_document
+from schemas import Lead
 
 app = FastAPI()
 
@@ -64,6 +68,17 @@ def test_database():
     
     return response
 
+# Email/notification mock: In this environment we cannot send real SMS/WhatsApp.
+# We will store the lead in MongoDB and return a success response. You can
+# connect email/SMS providers later (SendGrid, Twilio) with your API keys.
+
+@app.post("/api/leads")
+def create_lead(lead: Lead):
+    try:
+        lead_id = create_document("lead", lead)
+        return {"ok": True, "id": lead_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
